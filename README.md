@@ -19,7 +19,7 @@ Real-time Telegram notifications for DX Terminal Pro vault activity trades, port
 **1. Clone and install dependencies**
 
 ```bash
-git clone https://github.com/your-username/terminal-vault-monitor
+git clone https://github.com/starfrich/terminal-vault-monitor
 cd terminal-vault-monitor
 bun install
 ```
