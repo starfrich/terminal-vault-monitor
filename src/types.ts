@@ -48,5 +48,6 @@ export interface StreamEvent {
   transactionHash?: string; // alternative field name
   logId?: number;
   strategyId?: string;
+  data?: Record<string, unknown>;
   [key: string]: unknown;
 }

@@ -13,7 +13,7 @@ function fmtUsd(val: string | number): string {
 
 function resolveUsd(ev: StreamEvent): string {
   if (ev.usdValue) return fmtUsd(ev.usdValue);
-  if (ev.ethAmount && ev.ethPriceUsd) return fmtUsd(Number(ev.ethAmount) * ev.ethPriceUsd);
+  if (ev.ethAmount && ev.ethPriceUsd) return fmtUsd((Number(ev.ethAmount) / 1e18) * ev.ethPriceUsd);
   return '?';
 }
 
@@ -22,7 +22,7 @@ function formatSwapMessage(ev: StreamEvent): string {
   const sideMarker = ev.side === 'buy' ? '+' : '-';
   const tokenSymbol = esc(ev.tokenSymbol ?? '?');
   const tokenName = esc(ev.tokenName ?? 'Unknown');
-  const ethAmt = Number(ev.ethAmount ?? 0).toFixed(6);
+  const ethAmt = (Number(ev.ethAmount ?? 0) / 1e18).toFixed(6);
   const usdAmt = resolveUsd(ev);
   const txHash = ev.txHash ?? ev.transactionHash;
 
@@ -40,7 +40,7 @@ function formatSwapMessage(ev: StreamEvent): string {
 
   // Link — only ) and \ need escaping inside URL, tx hashes are hex so both are safe
   if (txHash) {
-    msg += `\n[View on Etherscan](https://etherscan.io/tx/${txHash})`;
+    msg += `\n[View on Basescan](https://basescan.org/tx/${txHash})`;
   }
 
   return msg;
@@ -55,18 +55,18 @@ export function startSSE() {
   es.onopen = () => log.success('sse', 'connected');
 
   es.onmessage = async (event: MessageEvent) => {
-    let data: StreamEvent;
+    let raw: StreamEvent;
     try {
-      data = JSON.parse(event.data as string);
+      raw = JSON.parse(event.data as string);
     } catch {
       return;
     }
 
-    const action = String(data.action ?? data.type ?? '').toLowerCase();
+    const action = String(raw.action ?? raw.type ?? '').toLowerCase();
     const isSwap = action.includes('swap') || action.includes('buy') || action.includes('sell');
     const isInference = action.includes('inference');
 
-    log.debug('sse', `event: ${action} | raw: ${JSON.stringify(data)}`);
+    log.debug('sse', `event: ${action} | raw: ${JSON.stringify(raw)}`);
 
     if (!isSwap && !isInference) return;
 
@@ -74,6 +74,10 @@ export function startSSE() {
       log.debug('sse', `inference-only: ${action}`);
       return;
     }
+
+    // Flatten nested data object if present
+    const data: StreamEvent =
+      raw.data && typeof raw.data === 'object' ? { ...raw, ...(raw.data as object) } : raw;
 
     log.info(
       'sse',
