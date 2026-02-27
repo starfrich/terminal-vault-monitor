@@ -1,0 +1,5 @@
+[install]
+exact = true
+ignore-scripts = true
+frozenLockfile = false  # Set to true in CI/CD
+registry = "https://registry.npmjs.org/"
